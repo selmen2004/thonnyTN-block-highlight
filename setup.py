@@ -1,0 +1,45 @@
+from setuptools import setup
+import os.path
+
+setupdir = os.path.dirname(__file__)
+
+setup(
+      name="thonny-block-highlight",
+      version="0.1",
+      description="Plug-in for Thonny IDE which highlights the current code block",
+      long_description="Plug-in for Thonny IDE which highlights the current code block",
+      url="https://gitlab.com/boldidea/thonny-block-highlight",
+      author="Ben Davis",
+      author_email="ben@boldidea.org",
+      license="MIT",
+      classifiers=[
+        "Environment :: MacOS X",
+        "Environment :: Win32 (MS Windows)",
+        "Environment :: X11 Applications",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "Intended Audience :: End Users/Desktop",
+        "License :: Freeware",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Topic :: Education",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Embedded Systems",
+      ],
+      keywords="IDE education programming Thonny",
+      platforms=["Windows", "macOS", "Linux"],
+      python_requires=">=3.6",
+      include_package_data=True,
+      install_requires=["thonny >= 3.0.0, < 3.2.*"],
+      packages=["thonnycontrib.block_highlight"],
+)

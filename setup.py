@@ -9,6 +9,7 @@ setup(
       description="Plug-in for Thonny IDE which highlights the current code block",
       long_description="Plug-in for Thonny IDE which highlights the current code block",
       url="https://gitlab.com/boldidea/thonny-block-highlight",
+      download_url="https://gitlab.com/boldidea/thonny-block-highlight/-/archive/0.1/thonny-block-highlight-0.1.zip",
       author="Ben Davis",
       author_email="ben@boldidea.org",
       license="MIT",

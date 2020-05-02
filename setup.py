@@ -5,7 +5,7 @@ setupdir = os.path.dirname(__file__)
 
 setup(
       name="thonny-block-highlight",
-      version="0.1",
+      version="0.2",
       description="Plug-in for Thonny IDE which highlights the current code block",
       long_description="Plug-in for Thonny IDE which highlights the current code block",
       url="https://gitlab.com/boldidea/thonny-block-highlight",
@@ -41,6 +41,6 @@ setup(
       platforms=["Windows", "macOS", "Linux"],
       python_requires=">=3.6",
       include_package_data=True,
-      install_requires=["thonny >= 3.0.0, < 3.2.*"],
+      install_requires=["thonny >= 3.0.0"],
       packages=["thonnycontrib.block_highlight"],
 )

@@ -1,4 +1,4 @@
-import ast
+import re
 import tkinter as tk
 from thonny import get_workbench
 
@@ -7,40 +7,40 @@ class Plugin:
     def __init__(self, workbench):
         self.workbench = workbench
         self.indent_guides = []
+        self.lines = []
 
-        events = ['CursorMove', 'Modified', 'TextChange', 'VerticalScroll', 'FocusIn']
-        for event in events:
+        place_guide_events = ['CursorMove', 'Modified', 'TextChange', 'VerticalScroll', 'FocusIn']
+        for event in place_guide_events:
             self.workbench.bind_class(
                 'CodeViewText', f'<<{event}>>', self.place_indent_guide, True)
 
-        self.workbench.bind_class('CodeViewText', 'FocusOut', self.remove_indent_guides, True)
+        update_lines_events = ['Modified', 'TextChange']
+        for event in update_lines_events:
+            self.workbench.bind_class(
+                'CodeViewText', f'<<{event}>>', self.update_lines, True)
 
-    def find_last_line(self, node):
-        max_line = None
-        if hasattr(node, 'lineno'):
-            max_line = node.lineno
-        for child_node in ast.walk(node):
-            if hasattr(child_node, 'lineno') and child_node.lineno > (max_line or 0):
-                max_line = child_node.lineno
-        return max_line
+        self.workbench.bind_class('CodeViewText', '<<FocusOut>>', self.remove_indent_guides, True)
 
-    def build_index(self, node, index=None):
-        if index is None:
-            index = {}
+        self.update_lines()
 
-        if hasattr(node, 'lineno'):
-            if not index.get(node.lineno):
-                index[node.lineno] = node
+    def get_text_widget(self):
+        if not hasattr(self.workbench, '_editor_notebook'):
+            return
 
-        if hasattr(node, 'body'):
-            node.lastline = self.find_last_line(node)
-            for item in node.body:
-                item.parent_node = node
-                if not hasattr(node, 'firstchild'):
-                    node.firstchild = item
-                self.build_index(item, index)
+        nb = self.workbench.get_editor_notebook()
+        editor = nb.get_current_child()
 
-        return index
+        if editor is None:
+            return
+
+        code_view = editor.get_code_view()
+        return code_view.text
+
+    def update_lines(self, event=None):
+        self.lines = []
+        text = self.get_text_widget()
+        if text is not None:
+            self.lines = text.get('1.0', 'end').splitlines()
 
     def get_syntax_theme(self, name=None):
         name = name or self.workbench.get_option('view.syntax_theme')
@@ -64,39 +64,85 @@ class Plugin:
                     result[key] = settings[key]
             return result
 
+    def find_block_line(self, lineno, direction):
+        """
+        find the start or end of the block for the given line
+
+        direction: -1 for the start, 1 for the end
+        """
+        text = self.get_text_widget()
+        if text is None:
+            return
+
+        line_indent = len(re.match(r'^(\s*)', self.lines[lineno-1]).group(1))
+        last_indent = line_indent
+        last_matching_line = lineno
+        while last_indent >= line_indent and lineno > 0 and lineno <= len(self.lines) - 2:
+            lineno += direction
+            line_text = self.lines[lineno-1]
+            if re.match(r'^\s*$', line_text):
+                # skip blank lines
+                continue
+            last_indent = len(re.match(r'^(\s*)', line_text).group(1))
+            if direction == -1 or last_indent >= line_indent:
+                last_matching_line = lineno
+
+        if direction == -1:
+            return last_matching_line
+        else:
+            return last_matching_line - 1
+
     def place_indent_guide(self, event=None):
         self.remove_indent_guides()
 
-        nb = self.workbench.get_editor_notebook()
-        editor = nb.get_current_child()
-
-        if editor is None:
+        text = self.get_text_widget()
+        if text is None:
             return
 
-        code_view = editor.get_code_view()
-        text = code_view.text
+        if len(self.lines) == 0:
+            return
 
-        src = text.get('1.0', 'end')
-        code_index = self.build_index(ast.parse(src))
         current_line = int(text.index('insert').split('.')[0])
-
-        if current_line not in code_index:
+        if current_line < 0 or current_line > len(self.lines) - 1:
             return
 
-        node = code_index[current_line]
-        parent = node.parent_node
-
-        if not hasattr(parent, 'lineno'):
+        current_line_text = self.lines[current_line-1]
+        if not re.match(r'\s+', current_line_text):
             return
+
+        start_line = self.find_block_line(current_line, -1)
+        end_line = self.find_block_line(current_line, 1)
+
+        # get indent of start line
+        start_line_text = self.lines[start_line-1]
+        indent = len(re.match(r'^(\s*)', start_line_text).group(1))
 
         text.update_idletasks()
 
-        bbox_start = text.bbox(f'{parent.lineno}.{parent.col_offset}')
-        bbox_end = text.bbox(f'{parent.lastline}.end')
+        top_visible_line = int(text.index('@0,0').split('.')[0])
+        bottom_visible_line = int(text.index(f'@0,{text.winfo_height()}').split('.')[0])
 
-        left = bbox_start[0] - text["padx"] + 2
-        top = bbox_start[1] + bbox_start[3] - text["pady"]
-        bottom = bbox_end[1] + text["pady"] + 5
+        # find start of block
+
+        if start_line > bottom_visible_line or end_line < top_visible_line:
+            # region is totally outside viewport, do nothing
+            return
+        if start_line < top_visible_line:
+            # start line is above viewport
+            top = 0
+        else:
+            bbox_start = text.bbox(f'{start_line}.{indent}')
+            top = bbox_start[1] + bbox_start[3] - text['pady']
+
+        if end_line > bottom_visible_line:
+            # end line is below viewport
+            bottom = text.winfo_height()
+        else:
+            bbox_end = text.bbox(f'{end_line}.end')
+            bottom = bbox_end[1] + bbox_end[3] + text["pady"] + 5
+
+        charwidth = tk.font.nametofont('EditorFont').measure(' ')
+        left = indent * charwidth
 
         syntax_theme = self.get_syntax_theme()
         line_color = syntax_theme["surrounding_parens"]["foreground"]

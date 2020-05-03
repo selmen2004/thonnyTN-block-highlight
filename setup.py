@@ -5,7 +5,7 @@ setupdir = os.path.dirname(__file__)
 
 setup(
       name="thonny-block-highlight",
-      version="0.2",
+      version="0.3",
       description="Plug-in for Thonny IDE which highlights the current code block",
       long_description="Plug-in for Thonny IDE which highlights the current code block",
       url="https://gitlab.com/boldidea/thonny-block-highlight",

@@ -66,7 +66,7 @@ class Plugin:
 
     def find_block_line(self, lineno, direction):
         """
-        find the start or end of the block for the given line
+        Find the start or end of the block for the given line.
 
         direction: -1 for the start, 1 for the end
         """
@@ -74,14 +74,14 @@ class Plugin:
         if text is None:
             return
 
-        line_indent = len(re.match(r'^(\s*)', self.lines[lineno-1]).group(1))
+        line_indent = len(re.match(r'^(\s*)', self.lines[lineno - 1]).group(1))
         last_indent = line_indent
         last_matching_line = lineno
         while last_indent >= line_indent and lineno > 0 and lineno <= len(self.lines) - 2:
             lineno += direction
-            line_text = self.lines[lineno-1]
+            line_text = self.lines[lineno - 1]
             if re.match(r'^\s*$', line_text):
-                # skip blank lines
+                # Skip blank lines
                 continue
             last_indent = len(re.match(r'^(\s*)', line_text).group(1))
             if direction == -1 or last_indent >= line_indent:
@@ -91,8 +91,16 @@ class Plugin:
             return last_matching_line
         else:
             return last_matching_line - 1
-
     def place_indent_guide(self, event=None):
+        import tkinter.font as tkfont
+
+        # Get the font used in the editor
+        font = tkfont.nametofont('EditorFont')
+        linespace = font.metrics('linespace')  # This typically corresponds to the font's height
+
+        # Scale the offset proportionally (25 is the offset when the font's linespace is 24)
+        offset = int(25 * linespace / 24)
+
         self.remove_indent_guides()
 
         text = self.get_text_widget()
@@ -106,15 +114,15 @@ class Plugin:
         if current_line < 0 or current_line > len(self.lines) - 1:
             return
 
-        current_line_text = self.lines[current_line-1]
+        current_line_text = self.lines[current_line - 1]
         if not re.match(r'\s+', current_line_text):
             return
 
         start_line = self.find_block_line(current_line, -1)
         end_line = self.find_block_line(current_line, 1)
 
-        # get indent of start line
-        start_line_text = self.lines[start_line-1]
+        # Get indent of start line
+        start_line_text = self.lines[start_line - 1]
         indent = len(re.match(r'^(\s*)', start_line_text).group(1))
 
         text.update_idletasks()
@@ -122,25 +130,39 @@ class Plugin:
         top_visible_line = int(text.index('@0,0').split('.')[0])
         bottom_visible_line = int(text.index(f'@0,{text.winfo_height()}').split('.')[0])
 
-        # find start of block
-
+        # Find start of block
         if start_line > bottom_visible_line or end_line < top_visible_line:
-            # region is totally outside viewport, do nothing
+            # Region is totally outside viewport; do nothing.
             return
+
         if start_line < top_visible_line:
-            # start line is above viewport
+            # Start line is above viewport.
             top = 0
         else:
             bbox_start = text.bbox(f'{start_line}.{indent}')
-            top = bbox_start[1] + bbox_start[3] - text['pady']
+            if bbox_start is None:
+                # If the bounding box isn't available, skip drawing the guide.
+                return
+            try:
+                pady = int(text.cget('pady'))
+            except (TypeError, ValueError):
+                pady = 0
+            top = bbox_start[1] + bbox_start[3] - pady
 
         if end_line > bottom_visible_line:
-            # end line is below viewport
+            # End line is below viewport.
             bottom = text.winfo_height()
         else:
             bbox_end = text.bbox(f'{end_line}.end')
-            bottom = bbox_end[1] + bbox_end[3] + text["pady"] + 5
+            if bbox_end is None:
+                return
+            try:
+                pady = int(text.cget('pady'))
+            except (TypeError, ValueError):
+                pady = 0
+            bottom = bbox_end[1] + bbox_end[3] + pady + offset//2
 
+        # Calculate the horizontal position for the guide.
         charwidth = tk.font.nametofont('EditorFont').measure(' ')
         left = indent * charwidth
 

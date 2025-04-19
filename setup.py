@@ -4,14 +4,14 @@ import os.path
 setupdir = os.path.dirname(__file__)
 
 setup(
-      name="thonny-block-highlight",
-      version="0.3",
+      name="thonnyTN-block-highlight",
+      version="0.3.1",
       description="Plug-in for Thonny IDE which highlights the current code block",
       long_description="Plug-in for Thonny IDE which highlights the current code block",
-      url="https://gitlab.com/boldidea/thonny-block-highlight",
-      download_url="https://gitlab.com/boldidea/thonny-block-highlight/-/archive/0.1/thonny-block-highlight-0.1.zip",
-      author="Ben Davis",
-      author_email="ben@boldidea.org",
+      url="https://github.com/selmen2004/thonnyTN-block-highlight",
+      download_url="https://github.com/selmen2004/thonnyTN-block-highlight",
+      author="Selmen Arous",
+      author_email="selmen.arous@gmail.com",
       license="MIT",
       classifiers=[
         "Environment :: MacOS X",
